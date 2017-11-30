@@ -40,7 +40,10 @@ it is located here:
 
 this create a new rest API interface available at /shared/workers/ipam-infoblox
 
-#
-
+the postman folder contains examples on how to manipulate this API
 
 #Requirements
+
+iControl LX extension is available on:
+  * iWorkflow 2.3.0
+  * BIG-IP 13.1
