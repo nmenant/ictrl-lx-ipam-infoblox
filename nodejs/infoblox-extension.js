@@ -17,6 +17,7 @@ function InfobloxWorker() {}
 
 InfobloxWorker.prototype.WORKER_URI_PATH = "/shared/workers/ipam-infoblox";
 InfobloxWorker.prototype.isPublic = true;
+InfobloxWorker.prototype.isPassThrough = true;
 
 /**
 * handle onGet HTTP request
@@ -26,8 +27,29 @@ InfobloxWorker.prototype.onGet = function(restOperation) {
   if (DEBUG) {
     logger.info("InfobloxWorker - onGet triggered");
   }
-  restOperation.setBody(JSON.stringify( { value: "Hello World!" } ));
-  this.completeRestOperation(restOperation);
+
+  var uriValue = restOperation.getUri();
+  var hostName = uriValue.path.toString().split("/")[4];
+  var athis = this;
+
+  if (DEBUG) {
+    logger.info("InfobloxWorker - onGet triggered - hostname to lookup is: " + hostName);
+  }
+
+  var infobloxQuery = new InfobloxFunc();
+  infobloxQuery.GetIPFromHostname(hostName)
+    .then (function(myIP) {
+      logger.info("InfobloxWorker - onGet, GetIPFromHostname - my retrieved IP is: " + myIP);
+      responseBody = "{ \"name\": \"" + hostName + "\", \"value\": \"" + myIP + "\"}";
+      restOperation.setBody(responseBody);
+      athis.completeRestOperation(restOperation);
+    })
+    .catch (function (err) {
+      logger.info("InfobloxWorker - onGet, GetIPFromHostname - something went wrong: " + JSON.stringify(err));
+      responseBody = "{ \"name\": \"" + hostName + "\", \"value\": \"" + err + "\"}";
+      restOperation.setBody(responseBody);
+      athis.completeRestOperation(restOperation);
+    });
 };
 
 /**
@@ -70,8 +92,31 @@ InfobloxWorker.prototype.onDelete = function(restOperation) {
   if (DEBUG) {
     logger.info("InfobloxWorker - onDelete triggered");
   }
-  restOperation.setBody(JSON.stringify( { value: "Hello World!" } ));
-  this.completeRestOperation(restOperation);
+
+  var uriValue = restOperation.getUri();
+  var hostName = uriValue.path.toString().split("/")[4];
+  var athis = this;
+
+  if (DEBUG) {
+    logger.info("InfobloxWorker - onDelete triggered - hostname to release is: " + hostName);
+  }
+
+  var infobloxQuery = new InfobloxFunc();
+  infobloxQuery.GetRefFromHostname(hostName)
+    .then (function(myRef) {
+      if (DEBUG) {
+        logger.info("InfobloxWorker - onDelete, GetRefFromHostname - my ref is: " + myRef);
+      }
+      return infobloxQuery.ReleaseIPFromRef(myRef);
+    })
+    .then (function() {
+      logger.info("InfobloxWorker - onDelete, ReleaseIPFromRef done");
+      athis.completeRestOperation(restOperation);
+    })
+    .catch (function (err) {
+      logger.info("InfobloxWorker - onDelete, something went wrong: " + JSON.stringify(err));
+      athis.completeRestOperation(restOperation);
+    });
 };
 
 /**
@@ -79,7 +124,8 @@ InfobloxWorker.prototype.onDelete = function(restOperation) {
 */
 InfobloxWorker.prototype.getExampleState = function () {
   return {
-    "value": "your_string"
+    "name": "my.fqdn.com",
+    "subnet": "10.100.60.0/24"
   };
 };
 

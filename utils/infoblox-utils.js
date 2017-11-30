@@ -31,6 +31,59 @@ function InfobloxUtils (name, subnet) {
   var subnet = subnet;
 
   /*
+  * This function is to be used to retrieve the IP allocated to a host
+  */
+  this.GetIPFromHostname = function (myHostname) {
+    return new Promise (
+      function (resolve, reject) {
+        if (DEBUG) {
+          logger.info("Infoblox Utils: function GetIPFromHostname, hostname is: " + myHostname);
+        }
+        var options = {
+          method: 'GET',
+      		url: 'https://' + infobloxIP + '/wapi/v2.6/record:host?name=' + myHostname + "&_return_as_object=1",
+      		headers:
+        		{
+          		"authorization": auth,
+          		'content-type': 'application/json'
+      			}
+        };
+        request(options, function (error, response, body) {
+          if (error) {
+            if (DEBUG) {
+              logger.info("Infoblox Utils: function GetIPFromHostname, http request to infoblox failed: " + error);
+            }
+            reject (error);
+          } else {
+            if (DEBUG) {
+              logger.info("Infoblox Utils: function GetIPFromHostname, http request to infoblox - response: " + response.statusCode);
+            }
+            var status = response.statusCode.toString().slice(0,1);
+            if ( status == "2") {
+              if (DEBUG) {
+                logger.info("Infoblox Utils: function GetIPFromHostname, http request to infoblox succeeded - body!!!!!: " + JSON.stringify(body));
+              }
+              var jsonBody = JSON.parse(body);
+              if (jsonBody.result.length == 0) {
+                logger.info("Infoblox Utils: function GetIPFromHostname, http request to infoblox failed - hostname does not exist: ");
+                reject("Hostname is not defined in Infoblox");                              
+              } else {
+                logger.info("Infoblox Utils: function GetIPFromHostname, http request to infoblox succeeded - IP: " + jsonBody.result[0].ipv4addrs[0].ipv4addr);
+                resolve(jsonBody.result[0].ipv4addrs[0].ipv4addr);
+              }
+            } else {
+              if (DEBUG) {
+                logger.info("Infoblox Utils: function GetIPFromToken, http request to infoblox failed - body: " + JSON.stringify(body));
+              }
+              reject (body);
+            }
+          }
+       });
+      }
+    )
+  }
+
+  /*
   * When we Allocate an IP from infoblox, infoblox just return a token
   * This function will use the token to retrieve the IP allocated to it
   */
@@ -142,6 +195,103 @@ function InfobloxUtils (name, subnet) {
       }
     )
   }
+
+  /*
+  * This function will return the ref based on the hostname
+  * this is needed to be able to delete a host.
+  */
+  this.GetRefFromHostname = function (myHostname) {
+    return new Promise (
+      function (resolve, reject) {
+        if (DEBUG) {
+          logger.info("Infoblox Utils: function GetRefFromHostname, hostname is: " + myHostname);
+        }
+        var options = {
+          method: 'GET',
+          url: 'https://' + infobloxIP + '/wapi/v2.6/record:host?name=' + myHostname + "&_return_as_object=1",
+          headers:
+            {
+              "authorization": auth,
+              'content-type': 'application/json'
+            }
+        };
+        request(options, function (error, response, body) {
+          if (error) {
+            if (DEBUG) {
+              logger.info("Infoblox Utils: function GetRefFromHostname, http request to infoblox failed: " + error);
+            }
+            reject (error);
+          } else {
+            if (DEBUG) {
+              logger.info("Infoblox Utils: function GetRefFromHostname, http request to infoblox - response: " + response.statusCode);
+            }
+            var status = response.statusCode.toString().slice(0,1);
+            if ( status == "2") {
+              if (DEBUG) {
+                logger.info("Infoblox Utils: function GetRefFromHostname, http request to infoblox succeeded - body!!!!!: " + JSON.stringify(body));
+                var jsonBody = JSON.parse(body);
+                logger.info("Infoblox Utils: function GetRefFromHostname, http request to infoblox succeeded - ref is: " + jsonBody.result[0]._ref);
+              }
+              resolve(jsonBody.result[0]._ref);
+            } else {
+              if (DEBUG) {
+                logger.info("Infoblox Utils: function GetIPFromToken, http request to infoblox failed - body: " + JSON.stringify(body));
+              }
+              reject (body);
+            }
+          }
+       });
+      }
+    )
+  }
+
+  /*
+  * This function is to release an IP that is not needed anymore based on the
+  * hostname's ref
+  */
+  this.ReleaseIPFromRef = function (myRef) {
+    return new Promise (
+      function (resolve, reject) {
+        if (DEBUG) {
+          logger.info("Infoblox Utils: function ReleaseIPFromRef, ref is: " + myRef);
+        }
+
+        var options = {
+          method: 'DELETE',
+          url: 'https://' + infobloxIP + '/wapi/v2.6/' + myRef,
+          headers:
+            {
+              "authorization": auth,
+              'content-type': 'application/json'
+            }
+        };
+        request(options, function (error, response, body) {
+          if (error) {
+            if (DEBUG) {
+              logger.info("Infoblox Utils: function ReleaseIPFromHostname, http request to infoblox failed: " + error);
+            }
+            reject (error);
+          } else {
+            if (DEBUG) {
+              logger.info("Infoblox Utils: function ReleaseIPFromHostname, http request to infoblox - delete Host - responsecode: " + response.statusCode);
+            }
+            var status = response.statusCode.toString().slice(0,1);
+            if ( status == "2") {
+              if (DEBUG) {
+                logger.info("Infoblox Utils: function ReleaseIPFromHostname, http request to delete Host !!!!!: ");
+              }
+              resolve();
+            } else {
+                if (DEBUG) {
+                  logger.info("Infoblox Utils: function GetIPFromToken, http request to infoblox failed - body: " + JSON.stringify(body));
+                }
+                reject (body);
+            }
+          }
+        }
+       );
+      })
+    }
 
 };
 
