@@ -1,0 +1,12 @@
+iControl LX extension - IPAM integration with Infoblox
+======================================================
+
+This iControl LX extension gives you an interface to leverage to communicate
+with an infoblox system.
+
+The following use cases have been created:
+
+#. Get an IP address from Infoblox. Infoblox will allocate an IP to your service
+  and reserve it
+#. Retrieve an IP associated to a FQDN on infoblox
+#. Release an IP address reserved on infoblox
