@@ -1,5 +1,4 @@
-iControl LX extension - IPAM integration with Infoblox
-======================================================
+#iControl LX extension - IPAM integration with Infoblox
 
 This iControl LX extension gives you an interface to leverage to communicate
 with an infoblox system.
@@ -10,8 +9,7 @@ The following use cases have been created:
   * Retrieve an IP associated to a FQDN on infoblox
   * Release an IP address reserved on infoblox
 
-Installation
-============
+#Installation
 
 To use this iControl LX extension, you need to install it on your BIG-IP or iWF
 platform.
@@ -30,8 +28,19 @@ Here is how to do it:
         "packageFilePath": "/var/config/rest/downloads/<your_rpm_name>.rpm"
       }
       ```
+Once the RPM is installed you should have a new folder on your platform called
+```
+ipam-infoblox
+```
+it is located here:
+
+```
+/var/config/rest/iapps
+```
+
+this create a new rest API interface available at /shared/workers/ipam-infoblox
+
+#
 
 
-
-Requirements
-============
+#Requirements
